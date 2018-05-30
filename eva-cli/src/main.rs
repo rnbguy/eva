@@ -8,7 +8,7 @@ extern crate error_chain;
 extern crate shellexpand;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use eva::configuration::Configuration;
+use eva::configuration::{Configuration, SchedulingStrategy};
 
 use errors::*;
 
@@ -41,9 +41,9 @@ fn main() {
 }
 
 fn run() -> Result<()> {
-    let configuration = configuration::read()?;
+    let mut configuration = configuration::read()?;
     let matches = cli(&configuration).get_matches();
-    dispatch(&matches, &configuration)
+    dispatch(&matches, &mut configuration)
 }
 
 fn cli<'a, 'b>(configuration: &Configuration) -> App<'a, 'b> {
@@ -89,7 +89,7 @@ fn cli<'a, 'b>(configuration: &Configuration) -> App<'a, 'b> {
         .subcommand(schedule)
 }
 
-fn dispatch(inputs: &ArgMatches, configuration: &Configuration) -> Result<()> {
+fn dispatch(inputs: &ArgMatches, configuration: &mut Configuration) -> Result<()> {
     match inputs.subcommand() {
         ("add", Some(submatches)) => {
             let content = submatches.value_of("content").unwrap();
@@ -127,7 +127,12 @@ fn dispatch(inputs: &ArgMatches, configuration: &Configuration) -> Result<()> {
         },
         ("schedule", Some(submatches)) => {
             let strategy = submatches.value_of("strategy").unwrap();
-            let schedule = eva::schedule(configuration, strategy)?;
+            configuration.scheduling_strategy = match strategy {
+                "importance" => SchedulingStrategy::Importance,
+                "urgency" => SchedulingStrategy::Urgency,
+                _ => unreachable!(),
+            };
+            let schedule = eva::schedule(configuration)?;
             println!("{}", schedule);
             Ok(())
         },

@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-
 use app_dirs;
 use app_dirs::{AppDataType, AppInfo};
 use config;

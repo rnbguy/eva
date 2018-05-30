@@ -26,7 +26,7 @@ use chrono::Duration;
 use configuration::Configuration;
 
 pub use errors::{Error, ErrorKind, Result, ResultExt};
-pub use scheduling::{Schedule, ScheduledTask};
+pub use scheduling::{Schedule, ScheduledTask, TimeSegment};
 use database::Database;
 
 #[macro_use]
@@ -45,10 +45,6 @@ mod errors {
             Schedule(scheduling::Error, scheduling::ErrorKind);
         }
         errors {
-            Parse(what: String, how_it_should_be: String) {
-                description("parse error")
-                display("I could not parse the {}. {}", what, how_it_should_be)
-            }
             Database(when: String) {
                 description("database error")
                 display("A database error occurred {}", when)
@@ -118,16 +114,10 @@ pub fn all(configuration: &Configuration) -> Result<Vec<Task>> {
     database.all_tasks()
 }
 
-pub fn schedule(configuration: &Configuration, strategy: &str) -> Result<Schedule> {
-    assert!(["importance", "urgency"].contains(&strategy));
-
+pub fn schedule(configuration: &Configuration) -> Result<Schedule> {
     let database = default_database(configuration)?;
-    let tasks = database.all_tasks()?;
-    let schedule = match strategy {
-        "importance" => Schedule::schedule_according_to_importance(tasks),
-        "urgency" => Schedule::schedule_according_to_myrjam(tasks),
-        _ => unreachable!(),
-    }?;
+    let tasks_per_segment = database.all_tasks_per_time_segment()?;
+    let schedule = Schedule::schedule(tasks_per_segment, configuration.scheduling_strategy)?;
     Ok(schedule)
 }
 
