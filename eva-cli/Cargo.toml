@@ -18,3 +18,8 @@ shellexpand = "1.1"
 [[bin]]
 name = "eva"
 path = "src/main.rs"
+
+[lib]
+name = "eva_c"
+path = "src/lib.rs"
+crate-type = ["dylib"]
